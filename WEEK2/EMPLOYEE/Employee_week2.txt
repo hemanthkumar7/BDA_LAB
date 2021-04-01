@@ -1,0 +1,52 @@
+$ cqlsh
+Connected to Test Cluster at 127.0.0.1:9042.
+[cqlsh 5.0.1 | Cassandra 4.0-beta2 | CQL spec 3.4.5 | Native protocol v4]
+Use HELP for help.
+cqlsh> 
+cqlsh> 
+cqlsh> create keyspace employee with replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
+cqlsh> use employee;
+cqlsh:employee> create table employeeinfo(emp_id int primary key, emp_name text, designation text, doj timestamp, salary double, dept_name text);
+cqlsh:employee> begin batch
+            ... insert into employeeinfo(emp_id, emp_name, designation, doj, salary, dept_name) values (1, 'Abhishek', 'Data analyst', '2016-07-01', 45676.90, 'Corporate');
+            ... insert into employeeinfo(emp_id, emp_name, designation, doj, salary, dept_name) values (121, 'Chirag', 'web design', '2019-08-06', 33399.80, 'web_designer');
+            ... apply batch;
+cqlsh:employee> select * from employeeinfo;
+
+ emp_id | dept_name    | designation  | doj                             | emp_name | salary
+--------+--------------+--------------+---------------------------------+----------+---------
+      1 |    Corporate | Data analyst | 2016-07-01 00:00:00.000000+0000 | Abhishek | 45676.9
+    121 | web_designer |   web design | 2019-08-06 00:00:00.000000+0000 |   Chirag | 33399.8
+
+(2 rows)
+cqlsh:employee> update employeeinfo set emp_name = 'Jinny', dept_name = 'Management' where emp_id = 121;
+cqlsh:employee> update employeeinfo set emp_name = 'Arbaz Ahmed', dept_name = 'Management' where emp_id = 121;
+cqlsh:employee> select * from employeeinfo;
+
+ emp_id | dept_name  | designation  | doj                             | emp_name    | salary
+--------+------------+--------------+---------------------------------+-------------+---------
+      1 |  Corporate | Data analyst | 2016-07-01 00:00:00.000000+0000 |    Abhishek | 45676.9
+    121 | Management |   web design | 2019-08-06 00:00:00.000000+0000 | Arbaz Ahmed | 33399.8
+
+(2 rows)
+cqlsh:employee> create index on employeeinfo(salary);
+cqlsh:employee> update employeeinfo set projects = {'Test', 'Start'} where emp_id in(1,121);
+cqlsh:employee> alter table employeeinfo add projects set<text>;
+cqlsh:employee> update employeeinfo set projects = {'project1', 'project2'} where emp_id in(1,121);
+cqlsh:employee> select * from employeeinfo;
+
+ emp_id | dept_name  | designation  | doj                             | emp_name    | projects                 | salary
+--------+------------+--------------+---------------------------------+-------------+--------------------------+---------
+      1 |  Corporate | Data analyst | 2016-07-01 00:00:00.000000+0000 |    Abhishek | {'project1', 'project2'} | 45676.9
+    121 | Management |   web design | 2019-08-06 00:00:00.000000+0000 | Arbaz Ahmed | {'project1', 'project2'} | 33399.8
+
+(2 rows)
+cqlsh:employee> begin batch insert into employeeinfo(emp_id, emp_name, designation, doj, salary, dept_name) values (121, 'Boris', 'MTO', '2001-08-05', 12212, 'Corporate') using ttl 120;
+            ... apply batch;
+cqlsh:employee> select ttl(designation) from employeeinfo where emp_id = 121;
+
+ ttl(designation)
+------------------
+               96
+
+(1 rows)
